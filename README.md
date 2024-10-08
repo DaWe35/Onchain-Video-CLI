@@ -12,6 +12,7 @@ This script allows you to upload videos to the Blast blockchain.
 2. Create a `.env` file in the root directory with your Ethereum private key:
    ```
    ETHEREUM_PRIVATE_KEY=your_private_key_here
+   NETWORK=mainnet or testnet
    ```
 
 3. Ensure you have `ffmpeg` installed on your system for video conversion.

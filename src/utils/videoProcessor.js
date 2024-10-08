@@ -58,7 +58,7 @@ async function convertAndChunkVideo(videoFile, resolution) {
       fs.readFile(tempFile)
         .then(data => {
           console.log('Converted video file read successfully.');
-          const chunkSize = 1024 * 1024; // 1MB chunks
+          const chunkSize = 40 * 1024; // 40KB chunks
           const chunks = [];
           for (let i = 0; i < data.length; i += chunkSize) {
             chunks.push(data.slice(i, i + chunkSize));
