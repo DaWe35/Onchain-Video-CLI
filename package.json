@@ -1,0 +1,13 @@
+{
+  "name": "ethereum-video-uploader",
+  "version": "1.0.0",
+  "description": "Upload videos to Ethereum blockchain",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "web3": "^1.5.2"
+  }
+}
