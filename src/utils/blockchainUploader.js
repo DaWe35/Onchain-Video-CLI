@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const Web3 = require('web3');
 require('dotenv').config();
-const { getEthPrice } = require('./gasEstimator');
+const { getEthPrice, calculateGasPrice } = require('./gasEstimator');
 
 let web3;
 if (process.env.NETWORK === 'mainnet') {
@@ -40,7 +40,7 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
     try {
       const adjustedGasLimit = 29700000; // Add some buffer
 
-      let gasPrice = await web3.eth.getGasPrice();
+      let gasPrice = await calculateGasPrice();
 
       switch (gasProfile) {
         case 'fast':
@@ -52,10 +52,10 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
           await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
           break;
         case 'custom':
-          while (BigInt(gasPrice) > BigInt(web3.utils.toWei(customMaxGas.toString(), 'gwei'))) {
-            console.log(`Current gas price (${web3.utils.fromWei(gasPrice, 'gwei')} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
+          while (gasPrice > BigInt(web3.utils.toWei(customMaxGas.toString(), 'gwei'))) {
+            console.log(`Current gas price (${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
             await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
-            gasPrice = await web3.eth.getGasPrice();
+            gasPrice = await calculateGasPrice();
           }
           await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice);
           break;
@@ -74,12 +74,12 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
 async function createOnchainVideo(contract, signer, videoMetadata, gasProfile, customMaxGas) {
   const { filename, duration, metadata } = videoMetadata;
   
-  let gasPrice = await web3.eth.getGasPrice();
+  let gasPrice = await calculateGasPrice();
   if (gasProfile === 'custom') {
-    while (BigInt(gasPrice) > BigInt(web3.utils.toWei(customMaxGas.toString(), 'gwei'))) {
-      console.log(`Current gas price (${web3.utils.fromWei(gasPrice, 'gwei')} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
+    while (gasPrice > BigInt(web3.utils.toWei(customMaxGas.toString(), 'gwei'))) {
+      console.log(`Current gas price (${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
       await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
-      gasPrice = await web3.eth.getGasPrice();
+      gasPrice = await calculateGasPrice();
     }
   }
 
@@ -92,7 +92,7 @@ async function createOnchainVideo(contract, signer, videoMetadata, gasProfile, c
       gasPrice: gasPrice
     });
     console.log(`Video created on blockchain. Transaction hash: ${receipt.transactionHash}`);
-    console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice, 'gwei')} Gwei`);
+    console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei`);
     
     // Assuming the contract emits an event with the videoId, we can get it from the logs
     const videoCreatedEvent = receipt.events.VideoCreated;
@@ -114,7 +114,7 @@ async function uploadChunk(contract, videoId, chunk, signer, gasLimit, gasPrice)
     gasPrice: gasPrice
   });
   console.log(`Chunk uploaded. Transaction hash: ${receipt.transactionHash}`);
-  console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice, 'gwei')} Gwei`);
+  console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei`);
 }
 
 module.exports = { uploadVideoToBlockchain };

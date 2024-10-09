@@ -6,6 +6,20 @@ const web3 = new Web3('https://rpc.blast.io');
 // Set GAS_PER_CHUNK to the specified value
 const GAS_PER_CHUNK = 29164658;
 
+// Calculate gas price based on the current base fee
+async function calculateGasPrice() {
+  try {
+      const latestBlock = await web3.eth.getBlock('latest');
+      const baseFee = BigInt(latestBlock.baseFeePerGas);
+      const increasedFee = baseFee + (baseFee * BigInt(14) / BigInt(100));
+      return increasedFee;
+  } catch (error) {
+      console.error('Error fetching current base fee:');
+      console.error(error.stack);
+      return null;
+  }
+}
+
 async function getEthPrice() {
     try {
       const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
@@ -157,4 +171,5 @@ module.exports = {
   getEthPrice,
   selectGasProfile,
   confirmUpload,
+  calculateGasPrice,  // Add this line to export the new function
 };
