@@ -34,7 +34,7 @@ async function getEthPrice() {
 
 async function estimateGasCosts(chunkCount, ethPrice, customGasPrice = null) {
   try {
-    const gasPrice = customGasPrice ? web3.utils.toWei(customGasPrice.toString(), 'gwei') : await web3.eth.getGasPrice();
+    const gasPrice = customGasPrice ? web3.utils.toWei(customGasPrice.toString(), 'gwei') : await calculateGasPrice();
     const gasPerChunk = BigInt(GAS_PER_CHUNK) * BigInt(gasPrice);
 
     const calculateCost = (totalGas) => {
@@ -146,8 +146,8 @@ async function promptMaxGasPrice() {
 
   try {
     // Get current gas price
-    const currentGasPrice = await web3.eth.getGasPrice();
-    const currentGasPriceGwei = web3.utils.fromWei(currentGasPrice, 'gwei');
+    const currentGasPrice = await calculateGasPrice();
+    const currentGasPriceGwei = web3.utils.fromWei(currentGasPrice.toString(), 'gwei');
     
     console.log(`Current gas price: ${currentGasPriceGwei} Gwei`);
     
