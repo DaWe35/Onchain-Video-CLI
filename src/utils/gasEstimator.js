@@ -1,7 +1,8 @@
 const Web3 = require('web3');
 const readline = require('readline');
 
-const web3 = new Web3('https://rpc.blast.io');
+  // web3 = new Web3('https://rpc.blast.io');
+const web3 = new Web3('https://rpc.ankr.com/blast');
 
 // Set GAS_PER_CHUNK to the specified value
 const GAS_PER_CHUNK = 29164658;

@@ -6,7 +6,8 @@ const { getEthPrice, calculateGasPrice } = require('./gasEstimator');
 
 let web3;
 if (process.env.NETWORK === 'mainnet') {
-  web3 = new Web3('https://rpc.blast.io');
+  // web3 = new Web3('https://rpc.blast.io');
+  web3 = new Web3('https://rpc.ankr.com/blast');
 } else {
   web3 = new Web3('https://sepolia.blast.io	');
 }
