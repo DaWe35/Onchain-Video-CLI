@@ -10,25 +10,25 @@ async function main() {
     console.log('Starting video upload process...');
     
     const privateKey = await getPrivateKey();
-    console.log('Private key retrieved.');
+   //  console.debug('Private key retrieved.');
     
     const videoFile = await getVideoFile();
-    console.log('Video file selected:', videoFile);
+   //  console.debug('Video file selected:', videoFile);
     
     const resolution = await getResolution();
-    console.log('Resolution selected:', resolution);
+   //  console.debug('Resolution selected:', resolution);
     
-    console.log('Converting and chunking video...');
+   //  console.debug('Converting and chunking video...');
     const videoChunks = await convertAndChunkVideo(videoFile, resolution);
-    console.log('Video converted and chunked. Total chunks:', videoChunks.length);
+   //  console.debug('Video converted and chunked. Total chunks:', videoChunks.length);
     
-    console.log('Fetching ETH price...');
+   //  console.debug('Fetching ETH price...');
     const ethPrice = await getEthPrice();
-    console.log('Current ETH price:', ethPrice);
+   //  console.debug('Current ETH price:', ethPrice);
     
-    console.log('Selecting gas profile...');
+   //  console.debug('Selecting gas profile...');
     const { gasProfile, customMaxGas, estimatedGasCosts } = await selectGasProfile(videoChunks.length, ethPrice);
-    console.log('Gas profile selected:', gasProfile);
+   //  console.debug('Gas profile selected:', gasProfile);
     
     const confirmed = await confirmUpload(estimatedGasCosts, gasProfile, customMaxGas);
 

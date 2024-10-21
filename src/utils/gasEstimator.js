@@ -77,9 +77,9 @@ async function selectGasProfile(chunkCount, ethPrice) {
 
   try {
     console.log(`\nSelect a gas profile for uploading ${chunkCount} chunks (estimates can be inaccurate):`);
-    console.log(`1. Fast: ${estimatedGasCosts.fast.eth} ETH ($${estimatedGasCosts.fast.usd})`);
-    console.log(`2. One per minute: ${estimatedGasCosts.onePerMinute.eth} ETH ($${estimatedGasCosts.onePerMinute.usd})`);
-    console.log('3. Custom: To be calculated based on your input\n');
+    console.log(`1. Instant: ${estimatedGasCosts.fast.eth} ETH ($${estimatedGasCosts.fast.usd})`);
+    console.log(`2. One chunk per minute: ${estimatedGasCosts.onePerMinute.eth} ETH ($${estimatedGasCosts.onePerMinute.usd})`);
+    console.log('3. Limit gas price: Uploads when gas price is below your specified limit. This can be really slow.\n');
 
     const answer = await new Promise((resolve) => {
       rl.question('Enter your choice (1-3): ', resolve);

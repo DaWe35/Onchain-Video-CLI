@@ -42,7 +42,8 @@ async function getResolution() {
 async function convertAndChunkVideo(videoFile, resolution) {
   console.log('Starting video conversion and chunking...');
   const tempFile = 'temp_converted.mp4';
-  const ffmpegCommand = `ffmpeg -i "${videoFile}" -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -c:v libx264 -profile:v main -level:v 4.2  -vf "scale=-2:${resolution}" -c:a aac -b:a 128k -shortest -movflags frag_keyframe+empty_moov+default_base_moof -f mp4 "${tempFile}"`;
+    
+  const ffmpegCommand = `ffmpeg -i '${videoFile}' -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 -c:v libx264 -profile:v main -level:v 4.2  -vf "scale=-2:${resolution}" -c:a aac -b:a 128k -shortest -movflags frag_keyframe+empty_moov+default_base_moof -f mp4 "${tempFile}"`;
   
   console.log('FFmpeg command:', ffmpegCommand);
   
@@ -53,11 +54,11 @@ async function convertAndChunkVideo(videoFile, resolution) {
         reject(error);
         return;
       }
-      console.log('Video conversion completed.');
+     //  console.debug('Video conversion completed.');
       
       fs.readFile(tempFile)
         .then(data => {
-          console.log('Converted video file read successfully.');
+         //  console.debug('Converted video file read successfully.');
           const chunkSize = 40 * 1024; // 40KB chunks
           const chunks = [];
           for (let i = 0; i < data.length; i += chunkSize) {
@@ -68,7 +69,7 @@ async function convertAndChunkVideo(videoFile, resolution) {
         })
         .then(chunks => {
           return fs.unlink(tempFile).then(() => {
-            console.log('Temporary file deleted.');
+           //  console.debug('Temporary file deleted.');
             return chunks;
           });
         })
