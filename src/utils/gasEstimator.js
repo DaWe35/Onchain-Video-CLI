@@ -11,7 +11,7 @@ async function calculateGasPrice() {
   try {
       const latestBlock = await web3.eth.getBlock('latest');
       const baseFee = BigInt(latestBlock.baseFeePerGas);
-      const increasedFee = baseFee + (baseFee * BigInt(14) / BigInt(100));
+      const increasedFee = baseFee + (baseFee * BigInt(4) / BigInt(100));
       return increasedFee;
   } catch (error) {
       console.error('Error fetching current base fee:');
