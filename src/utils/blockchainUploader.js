@@ -81,6 +81,7 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
             gasPrice = await calculateGasPrice();
           }
           await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
+          await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
           break;
       }
 
