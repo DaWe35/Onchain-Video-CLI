@@ -132,3 +132,4 @@ dist
 # temp file for video conversion
 temp_converted.mp4
 package-lock.json
+temp-chunks/

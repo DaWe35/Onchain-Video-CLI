@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const { exec } = require('child_process');
 const readline = require('readline');
+const path = require('path');
 
 async function getVideoFile() {
   const rl = readline.createInterface({
@@ -90,4 +91,30 @@ async function convertAndChunkVideo(videoFile, resolution) {
   });
 }
 
-module.exports = { getVideoFile, getResolution, convertAndChunkVideo };
+async function saveChunks(tempDir, filename, chunks) {
+  await fs.mkdir(tempDir, { recursive: true });
+  for (let i = 0; i < chunks.length; i++) {
+    const chunkPath = path.join(tempDir, `${filename}_chunk_${i}`);
+    await fs.writeFile(chunkPath, chunks[i]);
+  }
+}
+
+async function loadChunks(tempDir, filename) {
+  const files = await fs.readdir(tempDir);
+  const chunkFiles = files.filter(file => file.startsWith(`${filename}_chunk_`));
+  chunkFiles.sort((a, b) => {
+    const aIndex = parseInt(a.split('_').pop());
+    const bIndex = parseInt(b.split('_').pop());
+    return aIndex - bIndex;
+  });
+
+  const chunks = [];
+  for (const chunkFile of chunkFiles) {
+    const chunkPath = path.join(tempDir, chunkFile);
+    const chunkData = await fs.readFile(chunkPath);
+    chunks.push(chunkData);
+  }
+  return chunks;
+}
+
+module.exports = { getVideoFile, getResolution, convertAndChunkVideo, saveChunks, loadChunks };

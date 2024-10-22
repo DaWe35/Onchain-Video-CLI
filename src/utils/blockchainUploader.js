@@ -1,8 +1,8 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 const Web3 = require('web3');
-require('dotenv').config();
-const { getEthPrice, calculateGasPrice } = require('./gasEstimator');
+const { calculateGasPrice } = require('./gasEstimator');
+const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
 
 let web3;
 if (process.env.NETWORK === 'mainnet') {
@@ -13,7 +13,19 @@ if (process.env.NETWORK === 'mainnet') {
 }
 
 const abiPath = path.join(__dirname, '..', '..', 'src', 'abi.json');
-const contractABI = JSON.parse(fs.readFileSync(abiPath, 'utf8'));
+let contractABI;
+
+// We'll load the ABI asynchronously
+async function loadABI() {
+  try {
+    const abiData = await fs.readFile(abiPath, 'utf8');
+    contractABI = JSON.parse(abiData);
+  } catch (error) {
+    console.error('Error loading ABI:', error);
+    throw error;
+  }
+}
+
 let contractAddress;
 if (process.env.NETWORK === 'mainnet') {
   contractAddress = '0x1F00F51E00F10c019617fB4A50d4E893aaf8C98c';
@@ -21,7 +33,9 @@ if (process.env.NETWORK === 'mainnet') {
   contractAddress = '0xe9b1324F531A4603eb5D1a739E4Ee25a5C824890';
 }
 
-async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata) {
+async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk) {
+  await loadABI(); // Load the ABI before proceeding
+
   // Initialize the signer
   const signer = web3.eth.accounts.privateKeyToAccount(privateKey);
   web3.eth.accounts.wallet.add(signer);
@@ -29,14 +43,22 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
 
   const contract = new web3.eth.Contract(contractABI, contractAddress);
 
-  // First, create the video
-  console.log('Creating video on the blockchain...');
-  const videoId = await createOnchainVideo(contract, signer, videoMetadata, gasProfile, customMaxGas);
+  let videoId;
+
+  if (startFromChunk === 0) {
+    // Create the video if starting from the beginning
+    console.log('Creating video on the blockchain...');
+    videoId = await createOnchainVideo(contract, signer, videoMetadata, gasProfile, customMaxGas);
+    await updateProgress(0, videoChunks.length, videoMetadata.filename, videoId);
+  } else {
+    // If resuming, retrieve the videoId
+    console.log('Resuming upload...');
+    videoId = await retrieveVideoId(videoMetadata.filename);
+  }
 
   // Then, upload the chunks
-  for (let i = 0; i < videoChunks.length; i++) {
+  for (let i = startFromChunk; i < videoChunks.length; i++) {
     const chunk = videoChunks[i];
-    console.log(`Preparing to upload chunk ${i + 1} of ${videoChunks.length}`);
 
     try {
       const adjustedGasLimit = 29700000; // Add some buffer
@@ -45,11 +67,11 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
 
       switch (gasProfile) {
         case 'fast':
-          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice);
+          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
           await new Promise(resolve => setTimeout(resolve, 4000)); // Wait 4 seconds
           break;
         case 'onePerMinute':
-          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice);
+          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
           await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
           break;
         case 'custom':
@@ -58,11 +80,10 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
             await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
             gasPrice = await calculateGasPrice();
           }
-          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice);
+          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
           break;
       }
 
-      console.log(`Chunk ${i + 1} uploaded successfully.`);
     } catch (error) {
       console.error(`Error uploading chunk ${i + 1}:`, error);
       throw error;
@@ -108,14 +129,29 @@ async function createOnchainVideo(contract, signer, videoMetadata, gasProfile, c
   }
 }
 
-async function uploadChunk(contract, videoId, chunk, signer, gasLimit, gasPrice) {
+async function uploadChunk(contract, videoId, chunk, signer, gasLimit, gasPrice, currentChunkNumber, totalChunks, videoFilename ) {
   const receipt = await contract.methods.uploadChunk(chunk, videoId).send({
     from: signer.address,
     gas: gasLimit,
     gasPrice: gasPrice
   });
-  console.log(`Chunk uploaded. Transaction hash: ${receipt.transactionHash}`);
-  console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei`);
+  console.log(`Chunk ${currentChunkNumber + 1}/${totalChunks} uploaded. Tx hash: ${receipt.transactionHash}. Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei`);
+  await updateProgress(currentChunkNumber, totalChunks, videoFilename, videoId);
+}
+
+async function retrieveVideoId(filename) {
+  try {
+    const progressData = await fs.readFile(PROGRESS_FILE, 'utf8');
+    const progress = JSON.parse(progressData);
+    if (progress.filename === filename && progress.videoId) {
+      return progress.videoId;
+    } else {
+      throw new Error('Video ID not found in progress file');
+    }
+  } catch (error) {
+    console.error('Error retrieving video ID:', error);
+    throw error;
+  }
 }
 
 module.exports = { uploadVideoToBlockchain };
