@@ -50,7 +50,7 @@ async function confirmResumeUpload(existingUpload) {
     } else {
       console.log("If the latest chunk does not match, it's an indication of the wrong chunk being uploaded. This can make the video unplayable. This usually happens when the upload is completed, but not (yet) confirmed on the blockchain. Please edit the upload_progress.json file to correct the lastUploadedChunk value. Make sure you have no pending transactions in your wallet.");
       console.log(`File location: ${PROGRESS_FILE}`);
-      return false;
+      process.exit(1);
     }
   } finally {
     rl.close();
