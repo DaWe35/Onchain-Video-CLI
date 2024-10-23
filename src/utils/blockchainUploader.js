@@ -3,6 +3,7 @@ const path = require('path');
 const Web3 = require('web3');
 const { calculateGasPrice } = require('./gasEstimator');
 const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
+const { getBlobGasPrice } = require('./blobFee');
 
 let web3;
 if (process.env.NETWORK === 'mainnet') {
@@ -63,12 +64,17 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
     try {
       const adjustedGasLimit = 29700000; // Add some buffer
 
+      while (detailedPrice = await getBlobGasPrice().wei > BigInt(1)) {
+        console.log('Blob gas price is too high (', detailedPrice, '), waiting 60 seconds... If you still want to proceed, you have to delete the related part in the code');
+        await sleep(60000);
+      }
+
       let gasPrice = await calculateGasPrice();
 
       switch (gasProfile) {
         case 'fast':
           await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          await new Promise(resolve => setTimeout(resolve, 4000)); // Wait 4 seconds
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
           break;
         case 'onePerMinute':
           await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
