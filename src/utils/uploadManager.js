@@ -19,9 +19,14 @@ async function confirmResumeUpload(existingUpload) {
   console.log(`Found an incomplete upload for ${filename}`);
   console.log(`Progress: ${lastUploadedChunk + 1}/${totalChunks} chunks uploaded`);
 
-  const latestChunkPath = path.join(TEMP_DIR, `${filename}_chunk_${lastUploadedChunk}`);
-  const latestChunkData = await fs.readFile(latestChunkPath);
-  const latestChunkHex = latestChunkData.toString('hex').slice(0, 30);
+  let latestChunkHex;
+  if (lastUploadedChunk >= 0) {
+    const latestChunkPath = path.join(TEMP_DIR, `${filename}_chunk_${lastUploadedChunk}`);
+    const latestChunkData = await fs.readFile(latestChunkPath);
+    latestChunkHex = latestChunkData.toString('hex').slice(0, 30);
+  } else {
+    latestChunkHex = '0x';
+  }
 
   const rl = readline.createInterface({
     input: process.stdin,
