@@ -46,11 +46,12 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
 
   let videoId;
 
-  if (startFromChunk === 0) {
+  if (startFromChunk === null) {
     // Create the video if starting from the beginning
     console.log('Creating video on the blockchain...');
     videoId = await createOnchainVideo(contract, signer, videoMetadata, gasProfile, customMaxGas);
     await updateProgress(0, videoChunks.length, videoMetadata.filename, videoId);
+    startFromChunk = 0;
   } else {
     // If resuming, retrieve the videoId
     console.log('Resuming upload...');

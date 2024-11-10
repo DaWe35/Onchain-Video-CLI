@@ -31,7 +31,7 @@ async function main() {
       // console.debug('Converting and chunking video...');
       videoChunks = await convertAndChunkVideo(videoFile, resolution);
       await saveChunks(TEMP_DIR, path.basename(videoFile), videoChunks);
-      lastUploadedChunk = -1;
+      lastUploadedChunk = null;
       videoId = null;
       filename = path.basename(videoFile);
       totalChunks = videoChunks.length;
@@ -59,7 +59,11 @@ async function main() {
           codec: "video/mp4; codecs=\"avc1.64002A, mp4a.40.5\""
         })
       };
-      await uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata, lastUploadedChunk + 1);
+      let startFromChunk = null;
+      if (lastUploadedChunk !== null) {
+        startFromChunk = lastUploadedChunk + 1;
+      }
+      await uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk);
       console.log('Video uploaded successfully!');
       await cleanupTempFiles();
     } else {
