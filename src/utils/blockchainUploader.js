@@ -1,9 +1,10 @@
 const fs = require('fs').promises;
 const path = require('path');
 const Web3 = require('web3');
+const config = require('../config');
 const { calculateGasPrice } = require('./gasEstimator');
 const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
-const { getBlobGasPrice } = require('./blobFee');
+const { getBlobFee, getEthereumFee } = require('./blobFee');
 
 let web3;
 if (process.env.NETWORK === 'mainnet') {
@@ -64,9 +65,14 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
     try {
       const adjustedGasLimit = 29700000; // Add some buffer
 
-      while (detailedPrice = await getBlobGasPrice().wei > BigInt(1)) {
-        console.log('Blob gas price is too high (', detailedPrice, '), waiting 60 seconds... If you still want to proceed, you have to delete the related part in the code');
-        await sleep(60000);
+      while (ethereumFee = await getEthereumFee().gwei > Number(config.L1_FEE_LIMIT_GWEI)) {
+        console.log('L1 fee is higher (', ethereumFee, ') than the limit set in config.js, waiting 10 minutes... ');
+        await sleep(600000);
+      }
+
+      while (blobFee = await getBlobFee().gwei > Number(config.L1_BLOBL_FEE_LIMIT_GWEI)) {
+        console.log('Blob gas price is higher (', blobFee, ') than the limit set in config.js, waiting 10 minutes... ');
+        await sleep(600000);
       }
 
       let gasPrice = await calculateGasPrice();
