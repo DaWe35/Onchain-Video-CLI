@@ -52,7 +52,7 @@ async function estimateGasCosts(chunkCount, ethPrice, customGasPrice = null) {
     let customGas = BigInt(0);
 
     for (let i = 0; i < chunkCount; i++) {
-      fastGas += BigInt(Math.floor(Number(gasPerChunk) * Math.pow(1.125, i)));
+      fastGas += BigInt(Math.floor(Number(gasPerChunk) * Math.pow(1.02, i)));
       onePerMinuteGas += BigInt(Math.floor(Number(gasPerChunk) * Math.pow(1.01, i)));
       customGas += gasPerChunk;
     }
