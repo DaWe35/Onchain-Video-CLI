@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { getPrivateKey } = require('./utils/keyManager');
 const { getVideoFile, getResolution, convertAndChunkVideo, saveChunks, loadChunks } = require('./utils/videoProcessor');
-const { getEthPrice, selectGasProfile, confirmUpload } = require('./utils/gasEstimator');
+const { selectGasProfile, confirmUpload } = require('./utils/gasEstimator');
 const { uploadVideoToBlockchain } = require('./utils/blockchainUploader');
 const { TEMP_DIR, checkExistingUpload, confirmResumeUpload, cleanupTempFiles } = require('./utils/uploadManager');
 const path = require('path');
@@ -40,12 +40,8 @@ async function main() {
     // console.debug('Video converted and chunked. Total chunks:', totalChunks);
     console.log(`Total chunks: ${totalChunks}`);
     
-    // console.debug('Fetching ETH price...');
-    const ethPrice = await getEthPrice();
-    // console.debug('Current ETH price:', ethPrice);
-    
     // console.debug('Selecting gas profile...');
-    const { gasProfile, customMaxGas, estimatedGasCosts } = await selectGasProfile(totalChunks - lastUploadedChunk - 1, ethPrice);
+    const { gasProfile, customMaxGas, estimatedGasCosts } = await selectGasProfile(totalChunks - lastUploadedChunk - 1);
     // console.debug('Gas profile selected:', gasProfile);
     
     const confirmed = await confirmUpload(estimatedGasCosts, gasProfile, customMaxGas);
