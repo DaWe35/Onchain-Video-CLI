@@ -1,22 +1,32 @@
 const fs = require('fs').promises;
 const path = require('path');
-const Web3 = require('web3');
+const { createPublicClient, createWalletClient, http, formatGwei, parseGwei } = require('viem');
+const { blast } = require('viem/chains');
+const { privateKeyToAccount } = require('viem/accounts');
 const { calculateGasPrice } = require('./gasEstimator');
 const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
 const { getBlobFee, getEthereumFee } = require('./blobFee');
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-let web3;
+// Initialize Viem clients
+let publicClient;
+let walletClient;
 if (process.env.NETWORK === 'mainnet') {
-  // web3 = new Web3('https://rpc.blast.io');
-  web3 = new Web3('https://rpc.ankr.com/blast');
+  publicClient = createPublicClient({
+    chain: blast,
+    transport: http('https://rpc.ankr.com/blast')
+  });
 } else {
-  web3 = new Web3('https://sepolia.blast.io	');
+  publicClient = createPublicClient({
+    chain: blast,
+    transport: http('https://sepolia.blast.io')
+  });
 }
 
 const abiPath = path.join(__dirname, '..', '..', 'src', 'abi.json');
 let contractABI;
 
-// We'll load the ABI asynchronously
+// Modified ABI loading function
 async function loadABI() {
   try {
     const abiData = await fs.readFile(abiPath, 'utf8');
@@ -35,21 +45,22 @@ if (process.env.NETWORK === 'mainnet') {
 }
 
 async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk) {
-  await loadABI(); // Load the ABI before proceeding
+  await loadABI();
 
-  // Initialize the signer
-  const signer = web3.eth.accounts.privateKeyToAccount(privateKey);
-  web3.eth.accounts.wallet.add(signer);
-  web3.eth.defaultAccount = signer.address;
-
-  const contract = new web3.eth.Contract(contractABI, contractAddress);
+  // Initialize the account and wallet client
+  const account = privateKeyToAccount(privateKey);
+  walletClient = createWalletClient({
+    account,
+    chain: blast,
+    transport: http(process.env.NETWORK === 'mainnet' ? 'https://rpc.ankr.com/blast' : 'https://sepolia.blast.io')
+  });
 
   let videoId;
 
   if (startFromChunk === null) {
     // Create the video if starting from the beginning
     console.log('Creating video on the blockchain...');
-    videoId = await createOnchainVideo(contract, signer, videoMetadata, gasProfile, customMaxGas);
+    videoId = await createOnchainVideo(videoMetadata, gasProfile, customMaxGas);
     await updateProgress(0, videoChunks.length, videoMetadata.filename, videoId);
     startFromChunk = 0;
   } else {
@@ -58,19 +69,19 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
     videoId = await retrieveVideoId(videoMetadata.filename);
   }
 
-  // Then, upload the chunks
+  // Upload chunks
   for (let i = startFromChunk; i < videoChunks.length; i++) {
     const chunk = videoChunks[i];
 
     try {
-      const adjustedGasLimit = 29700000; // Add some buffer
+      const adjustedGasLimit = 29700000n;
 
-      while (ethereumFee = await getEthereumFee().gwei > Number(process.env.L1_FEE_LIMIT_GWEI)) {
+      while ((ethereumFee = await getEthereumFee()) > Number(process.env.L1_FEE_LIMIT_GWEI)) {
         console.log('L1 fee is higher (', ethereumFee, ') than the limit set in .env, waiting 10 minutes... ');
         await sleep(600000);
       }
 
-      while (blobFee = await getBlobFee().gwei > Number(process.env.L1_BLOBL_FEE_LIMIT_GWEI)) {
+      while ((blobFee = await getBlobFee()) > Number(process.env.L1_BLOBL_FEE_LIMIT_GWEI)) {
         console.log('Blob gas price is higher (', blobFee, ') than the limit set in .env, waiting 10 minutes... ');
         await sleep(600000);
       }
@@ -79,24 +90,23 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
 
       switch (gasProfile) {
         case 'fast':
-          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
+          await new Promise(resolve => setTimeout(resolve, 5000));
           break;
         case 'onePerMinute':
-          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+          await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
+          await new Promise(resolve => setTimeout(resolve, 60000));
           break;
         case 'custom':
-          while (gasPrice > BigInt(web3.utils.toWei(customMaxGas.toString(), 'gwei'))) {
-            console.log(`Current gas price (${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
-            await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+          while (gasPrice > parseGwei(`${customMaxGas}`)) {
+            console.log(`Current gas price (${formatGwei(gasPrice)} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
+            await new Promise(resolve => setTimeout(resolve, 60000));
             gasPrice = await calculateGasPrice();
           }
-          await uploadChunk(contract, videoId, chunk, signer, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+          await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
+          await new Promise(resolve => setTimeout(resolve, 10000));
           break;
       }
-
     } catch (error) {
       console.error(`Error uploading chunk ${i + 1}:`, error);
       throw error;
@@ -106,33 +116,51 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
   console.log('All chunks uploaded successfully');
 }
 
-async function createOnchainVideo(contract, signer, videoMetadata, gasProfile, customMaxGas) {
+async function createOnchainVideo(videoMetadata, gasProfile, customMaxGas) {
   const { filename, duration, metadata } = videoMetadata;
   
   let gasPrice = await calculateGasPrice();
   if (gasProfile === 'custom') {
-    while (gasPrice > BigInt(web3.utils.toWei(customMaxGas.toString(), 'gwei'))) {
-      console.log(`Current gas price (${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
-      await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 1 minute
+    while (gasPrice > parseGwei(`${customMaxGas}`)) {
+      console.log(`Current gas price (${formatGwei(gasPrice)} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
+      await new Promise(resolve => setTimeout(resolve, 60000));
       gasPrice = await calculateGasPrice();
     }
   }
 
-  const gasLimit = 500000; // Adjust this value based on the actual gas requirement of CreateOnchainVideo
-
   try {
-    const receipt = await contract.methods.createOnchainVideo(filename, duration, metadata).send({
-      from: signer.address,
+    const hash = await walletClient.writeContract({
+      address: contractAddress,
+      abi: contractABI,
+      functionName: 'createOnchainVideo',
+      args: [filename, duration, metadata],
       gas: gasLimit,
       gasPrice: gasPrice
     });
+
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
     console.log(`Video created on blockchain. Transaction hash: ${receipt.transactionHash}`);
-    console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei`);
-    
-    // Assuming the contract emits an event with the videoId, we can get it from the logs
-    const videoCreatedEvent = receipt.events.VideoCreated;
-    if (videoCreatedEvent) {
-      return videoCreatedEvent.returnValues.videoId;
+    console.log(`Gas used: ${receipt.gasUsed}, Gas price: ${formatGwei(gasPrice)} Gwei`);
+
+    const logs = await publicClient.getLogs({
+      address: contractAddress,
+      event: {
+        type: 'event',
+        name: 'VideoCreated',
+        inputs: [
+          {
+            type: 'uint256',
+            name: 'videoId',
+            indexed: true
+          }
+        ]
+      },
+      fromBlock: receipt.blockNumber,
+      toBlock: receipt.blockNumber
+    });
+
+    if (logs[0]) {
+      return logs[0].args.videoId;
     } else {
       throw new Error('VideoCreated event not found in transaction receipt');
     }
@@ -142,13 +170,18 @@ async function createOnchainVideo(contract, signer, videoMetadata, gasProfile, c
   }
 }
 
-async function uploadChunk(contract, videoId, chunk, signer, gasLimit, gasPrice, currentChunkNumber, totalChunks, videoFilename ) {
-  const receipt = await contract.methods.uploadChunk(chunk, videoId).send({
-    from: signer.address,
+async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumber, totalChunks, videoFilename) {
+  const hash = await walletClient.writeContract({
+    address: contractAddress,
+    abi: contractABI,
+    functionName: 'uploadChunk',
+    args: [chunk, videoId],
     gas: gasLimit,
     gasPrice: gasPrice
   });
-  console.log(`Chunk ${currentChunkNumber + 1}/${totalChunks} uploaded. Tx hash: ${receipt.transactionHash}. Gas used: ${receipt.gasUsed}, Gas price: ${web3.utils.fromWei(gasPrice.toString(), 'gwei')} Gwei`);
+
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  console.log(`Chunk ${currentChunkNumber + 1}/${totalChunks} uploaded. Tx hash: ${receipt.transactionHash}. Gas used: ${receipt.gasUsed}, Gas price: ${formatGwei(gasPrice)} Gwei`);
   await updateProgress(currentChunkNumber, totalChunks, videoFilename, videoId);
 }
 

@@ -9,6 +9,6 @@
   "dependencies": {
     "dotenv": "^10.0.0",
     "readline-sync": "^1.4.10",
-    "web3": "^1.5.2"
+    "viem": "^2.7.8"
   }
 }

@@ -15,7 +15,7 @@ async function main() {
     
     // Check for existing upload
     const existingUpload = await checkExistingUpload();
-    let filename, lastUploadedChunk, totalChunks, videoId, videoFile;
+    let filename, lastUploadedChunk, totalChunks, videoId, videoFile, videoChunks;
 
     if (existingUpload && await confirmResumeUpload(existingUpload)) {
       ({ filename, lastUploadedChunk, totalChunks, videoId } = existingUpload);

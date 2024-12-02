@@ -1,16 +1,24 @@
-# Onchain Video CLI
+# Ethereum Video Uploader
 
-This script allows you to upload videos to the Blast blockchain.
+A tool for uploading videos to the Blast blockchain.
 
 ## Important Disclaimer
 
 This is a beta software and it can make you spend a lot of money on gas fees. Use it at your own risk.
 
-Also please generate a separate wallet for this, it's very dangerous to store your private key on your local machine without encryption. If you just want a demo, try the web version: https://onchainvideo.win
+Please generate a separate wallet for this, it's very dangerous to store your private key on your local machine without encryption. If you just want a demo, try the web version: https://onchainvideo.win
 
-## Setup
+## Prerequisites
 
-1. Install dependencies:
+- Node.js (v16 or later)
+- FFmpeg installed and available in PATH
+- A Blast wallet with sufficient funds
+- Your private key (stored in `.env` file)
+
+## Installation
+
+1. Clone this repository
+2. Install dependencies:
    ```
    npm install
    ```
