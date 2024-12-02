@@ -104,9 +104,7 @@ async function estimateGasCosts(chunkCount, customGasPrice = null) {
             customGas += gasPerChunk
 			totalL1Fee += l1FeePerChunk
         }
-		console.log("l1FeePerChunk", l1FeePerChunk)
-		console.log("totalL1Fee", totalL1Fee)
-		console.log("chunkCount", chunkCount)
+		
         return {
             fast: calculateUsd(fastGas, ethPrice),
             onePerMinute: calculateUsd(onePerMinuteGas, ethPrice),
