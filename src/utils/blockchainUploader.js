@@ -3,7 +3,7 @@ const path = require('path');
 const { createPublicClient, createWalletClient, http, formatGwei, parseGwei } = require('viem');
 const { blast } = require('viem/chains');
 const { privateKeyToAccount } = require('viem/accounts');
-const { calculateGasPrice } = require('./gasEstimator');
+const { calculateFee } = require('./gasEstimator');
 const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
 const { getBlobFee, getEthereumFee } = require('./blobFee');
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -86,7 +86,7 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
         await sleep(600000);
       }
 
-      let gasPrice = await calculateGasPrice();
+      let gasPrice = await calculateFee();
 
       switch (gasProfile) {
         case 'fast':
@@ -101,7 +101,7 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
           while (gasPrice > parseGwei(`${customMaxGas}`)) {
             console.log(`Current gas price (${formatGwei(gasPrice)} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
             await new Promise(resolve => setTimeout(resolve, 60000));
-            gasPrice = await calculateGasPrice();
+            gasPrice = await calculateFee();
           }
           await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
           await new Promise(resolve => setTimeout(resolve, 10000));
@@ -119,12 +119,12 @@ async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, cust
 async function createOnchainVideo(videoMetadata, gasProfile, customMaxGas) {
   const { filename, duration, metadata } = videoMetadata;
   
-  let gasPrice = await calculateGasPrice();
+  let gasPrice = await calculateFee();
   if (gasProfile === 'custom') {
     while (gasPrice > parseGwei(`${customMaxGas}`)) {
       console.log(`Current gas price (${formatGwei(gasPrice)} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
       await new Promise(resolve => setTimeout(resolve, 60000));
-      gasPrice = await calculateGasPrice();
+      gasPrice = await calculateFee();
     }
   }
 
@@ -177,7 +177,8 @@ async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumbe
     functionName: 'uploadChunk',
     args: [chunk, videoId],
     gas: gasLimit,
-    gasPrice: gasPrice
+    maxFeePerGas: gasPrice,
+    maxPriorityFeePerGas: 1n,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });

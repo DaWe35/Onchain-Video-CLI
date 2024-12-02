@@ -11,7 +11,7 @@ const publicClient = createPublicClient({
 const GAS_PER_CHUNK = 29164658n
 
 // Calculate gas price based on the current base fee
-async function calculateGasPrice() {
+async function calculateFee() {
   try {
     const block = await publicClient.getBlock()
     const baseFee = block.baseFeePerGas
@@ -38,7 +38,7 @@ async function getEthPrice() {
 
 async function estimateGasCosts(chunkCount, ethPrice, customGasPrice = null) {
   try {
-    const gasPrice = customGasPrice ? parseGwei(`${customGasPrice}`) : await calculateGasPrice()
+    const gasPrice = customGasPrice ? parseGwei(`${customGasPrice}`) : await calculateFee()
     const gasPerChunk = GAS_PER_CHUNK * gasPrice
 
     const calculateCost = (totalGas) => {
@@ -150,7 +150,7 @@ async function promptMaxGasPrice() {
 
   try {
     // Get current gas price
-    const gasPrice = await calculateGasPrice()
+    const gasPrice = await calculateFee()
     const currentGasPriceGwei = formatGwei(gasPrice)
     
     console.log(`Current gas price: ${currentGasPriceGwei} Gwei`)
@@ -175,5 +175,5 @@ module.exports = {
   getEthPrice,
   selectGasProfile,
   confirmUpload,
-  calculateGasPrice
+  calculateFee
 }
