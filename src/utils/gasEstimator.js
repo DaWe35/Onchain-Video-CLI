@@ -15,7 +15,7 @@ async function calculateFee() {
     try {
         const block = await publicClient.getBlock()
         const baseFee = block.baseFeePerGas
-        const increasedFee = baseFee + (baseFee * 4n) / 100n
+        const increasedFee = baseFee + (baseFee * 12n) / 100n
         return increasedFee
     } catch (error) {
         console.error('Error fetching current base fee:')
