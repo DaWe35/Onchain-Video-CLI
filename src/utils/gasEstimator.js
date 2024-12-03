@@ -1,7 +1,8 @@
-const { createPublicClient, http, formatGwei, parseGwei, formatEther, privateKeyToAccount } = require('viem')
+const { createPublicClient, http, formatGwei, parseGwei, formatEther } = require('viem')
+const { privateKeyToAccount } = require('viem/accounts')
 const { blast } = require('viem/chains')
 const readline = require('readline')
-const { getPrivateKey } = require('./../utils/keyManager');
+const { getPrivateKey } = require('./../utils/keyManager')
 
 const publicClient = createPublicClient({
     chain: blast,
@@ -86,7 +87,7 @@ function calculateUsd(totalGas, ethPrice) {
 // Update estimateGasCosts function
 async function estimateGasCosts(chunkCount, customGasPrice = null) {
     try {
-		const ethPrice = await getEthPrice();
+		const ethPrice = await getEthPrice()
 
         const gasPrice = customGasPrice ? parseGwei(`${customGasPrice}`) : await calculateFee()
         const gasPerChunk = GAS_PER_CHUNK * gasPrice
@@ -133,8 +134,8 @@ async function selectGasProfile(chunkCount) {
         console.log(`2. One chunk per minute: ${estimatedGasCosts.onePerMinute.eth} ETH ($${estimatedGasCosts.onePerMinute.usd}) L2 fee + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.l1.usd}) L1 fee`)
         console.log('3. Limit gas price: Uploads when gas price is below your specified limit. This can be really slow.\n')
 
-        const privateKey = await getPrivateKey();
-        const account = privateKeyToAccount(privateKey);
+        const privateKey = await getPrivateKey()
+        const account = privateKeyToAccount(privateKey)
 
         const balance = await publicClient.getBalance({
             address: account.address
