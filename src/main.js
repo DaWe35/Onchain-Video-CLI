@@ -10,7 +10,7 @@ async function main() {
   try {
     console.log('Starting video upload process...');
     
-    const privateKey = await getPrivateKey();
+    await getPrivateKey();
     // console.debug('Private key retrieved.');
     
     // Check for existing upload
@@ -59,7 +59,7 @@ async function main() {
       if (lastUploadedChunk !== null) {
         startFromChunk = lastUploadedChunk + 1;
       }
-      await uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk);
+      await uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk);
       console.log('Video uploaded successfully!');
       await cleanupTempFiles();
     } else {

@@ -3,6 +3,7 @@ const path = require('path');
 const { createPublicClient, createWalletClient, http, formatGwei, parseGwei } = require('viem');
 const { blast } = require('viem/chains');
 const { privateKeyToAccount } = require('viem/accounts');
+const { getPrivateKey } = require('./../utils/keyManager');
 const { calculateFee } = require('./gasEstimator');
 const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
 const { getBlobFee, getEthereumFee } = require('./blobFee');
@@ -44,10 +45,10 @@ if (process.env.NETWORK === 'mainnet') {
   contractAddress = '0xe9b1324F531A4603eb5D1a739E4Ee25a5C824890';
 }
 
-async function uploadVideoToBlockchain(privateKey, videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk) {
+async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk) {
   await loadABI();
 
-  // Initialize the account and wallet client
+  const privateKey = await getPrivateKey();
   const account = privateKeyToAccount(privateKey);
   walletClient = createWalletClient({
     account,

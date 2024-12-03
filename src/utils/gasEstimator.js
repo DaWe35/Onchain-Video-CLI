@@ -1,6 +1,7 @@
-const { createPublicClient, http, formatGwei, parseGwei, formatEther } = require('viem')
+const { createPublicClient, http, formatGwei, parseGwei, formatEther, privateKeyToAccount } = require('viem')
 const { blast } = require('viem/chains')
 const readline = require('readline')
+const { getPrivateKey } = require('./../utils/keyManager');
 
 const publicClient = createPublicClient({
     chain: blast,
@@ -131,6 +132,17 @@ async function selectGasProfile(chunkCount) {
         console.log(`1. Instant: ${estimatedGasCosts.fast.eth} + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.fast.usd}) L2 fee + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.l1.usd}) L1 fee`)
         console.log(`2. One chunk per minute: ${estimatedGasCosts.onePerMinute.eth} ETH ($${estimatedGasCosts.onePerMinute.usd}) L2 fee + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.l1.usd}) L1 fee`)
         console.log('3. Limit gas price: Uploads when gas price is below your specified limit. This can be really slow.\n')
+
+        const privateKey = await getPrivateKey();
+        const account = privateKeyToAccount(privateKey);
+
+        const balance = await publicClient.getBalance({
+            address: account.address
+        })
+        const balanceInEth = formatEther(balance)
+        const ethPrice = await getEthPrice()
+        const balanceInUsd = (Number(balanceInEth) * ethPrice).toFixed(2)
+        console.log(`Wallet balance: ${balanceInEth} ETH ($${balanceInUsd})\n`)
 
         const answer = await new Promise((resolve) => {
             rl.question('Enter your choice (1-3): ', resolve)
