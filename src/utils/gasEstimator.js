@@ -130,7 +130,7 @@ async function selectGasProfile(chunkCount) {
 
     try {
         console.log(`\nSelect a gas profile for uploading ${chunkCount} chunks (estimates can be inaccurate):`)
-        console.log(`1. Instant: ${estimatedGasCosts.fast.eth} + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.fast.usd}) L2 fee + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.l1.usd}) L1 fee`)
+        console.log(`1. Instant: ${estimatedGasCosts.fast.eth} ETH ($${estimatedGasCosts.fast.usd}) L2 fee + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.l1.usd}) L1 fee`)
         console.log(`2. One chunk per minute: ${estimatedGasCosts.onePerMinute.eth} ETH ($${estimatedGasCosts.onePerMinute.usd}) L2 fee + ${estimatedGasCosts.l1.eth} ETH ($${estimatedGasCosts.l1.usd}) L1 fee`)
         console.log('3. Limit gas price: Uploads when gas price is below your specified limit. This can be really slow.\n')
 
