@@ -170,9 +170,14 @@ async function createOnchainVideo(videoMetadata, gasProfile, customMaxGas) {
         name: 'VideoCreated',
         inputs: [
           {
+            type: 'address',
+            name: 'user',
+            indexed: true
+          },
+          {
             type: 'uint256',
             name: 'videoId',
-            indexed: true
+            indexed: false
           }
         ]
       },
