@@ -110,8 +110,8 @@ async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, vi
       switch (gasProfile) {
         case 'fast':
           await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          console.log('Sleeping for 2 seconds...');
-          await sleep(2000);
+          console.log('Sleeping for 5 seconds...');
+          await sleep(5000);
           console.log('Sleeping done...');
           break;
         case 'onePerMinute':
