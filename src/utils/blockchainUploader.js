@@ -45,6 +45,23 @@ if (process.env.NETWORK === 'mainnet') {
   contractAddress = '0xe9b1324F531A4603eb5D1a739E4Ee25a5C824890';
 }
 
+// When preparing data for the contract, ensure it's properly hex encoded:
+const prepareChunkForUpload = (chunk) => {
+    // If chunk is Buffer or Uint8Array
+    if (Buffer.isBuffer(chunk) || chunk instanceof Uint8Array) {
+        return `0x${Buffer.from(chunk).toString('hex')}`
+    }
+    // If chunk is already a string but missing 0x prefix
+    if (typeof chunk === 'string' && !chunk.startsWith('0x')) {
+        return `0x${chunk}`
+    }
+    // If chunk is already a properly formatted hex string
+    if (typeof chunk === 'string' && chunk.startsWith('0x')) {
+        return chunk
+    }
+    throw new Error('Invalid chunk format')
+}
+
 async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk) {
   await loadABI();
 
@@ -172,11 +189,12 @@ async function createOnchainVideo(videoMetadata, gasProfile, customMaxGas) {
 }
 
 async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumber, totalChunks, videoFilename) {
+  const hexData = prepareChunkForUpload(chunk)
   const hash = await walletClient.writeContract({
     address: contractAddress,
     abi: contractABI,
     functionName: 'uploadChunk',
-    args: [chunk, videoId],
+    args: [hexData, videoId],
     gas: gasLimit,
     maxFeePerGas: gasPrice,
     maxPriorityFeePerGas: 1n,
