@@ -15,7 +15,7 @@ let walletClient;
 if (process.env.NETWORK === 'mainnet') {
   publicClient = createPublicClient({
     chain: blast,
-    transport: http('https://rpc.ankr.com/blast')
+    transport: http('https://rpc.blast.io')
   });
 } else {
   publicClient = createPublicClient({
@@ -200,7 +200,7 @@ async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumbe
     args: [hexData, videoId],
     gas: gasLimit,
     maxFeePerGas: gasPrice,
-    maxPriorityFeePerGas: 2n,
+    maxPriorityFeePerGas: 1n,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
