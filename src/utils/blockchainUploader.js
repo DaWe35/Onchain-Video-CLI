@@ -105,6 +105,7 @@ async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, vi
       }
 
       let gasPrice = await calculateFee();
+      console.log('Uploading chunk', i + 1, 'with gas price:', formatGwei(gasPrice));
 
       switch (gasProfile) {
         case 'fast':
