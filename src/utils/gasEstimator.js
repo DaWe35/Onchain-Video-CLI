@@ -6,7 +6,7 @@ const { getPrivateKey } = require('./../utils/keyManager')
 
 const publicClient = createPublicClient({
     chain: blast,
-    transport: http('https://rpc.ankr.com/blast')
+    transport: http('https://rpc.blast.io')
 })
 
 // Set GAS_PER_CHUNK to the specified value

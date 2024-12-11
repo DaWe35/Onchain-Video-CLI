@@ -70,7 +70,7 @@ async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, vi
   walletClient = createWalletClient({
     account,
     chain: blast,
-    transport: http(process.env.NETWORK === 'mainnet' ? 'https://rpc.ankr.com/blast' : 'https://sepolia.blast.io')
+    transport: http(process.env.NETWORK === 'mainnet' ? 'https://rpc.blast.io' : 'https://sepolia.blast.io')
   });
 
   let videoId;
@@ -200,7 +200,7 @@ async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumbe
     args: [hexData, videoId],
     gas: gasLimit,
     maxFeePerGas: gasPrice,
-    maxPriorityFeePerGas: 1000n,
+    maxPriorityFeePerGas: 1000000n,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
