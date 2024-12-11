@@ -155,7 +155,7 @@ async function createOnchainVideo(videoMetadata, gasProfile, customMaxGas) {
       abi: contractABI,
       functionName: 'createOnchainVideo',
       args: [filename, duration, metadata],
-      gas: gasLimit,
+      gas: 500000n,
       gasPrice: gasPrice
     });
 
