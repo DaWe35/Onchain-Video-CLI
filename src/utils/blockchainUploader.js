@@ -200,7 +200,7 @@ async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumbe
     args: [hexData, videoId],
     gas: gasLimit,
     maxFeePerGas: gasPrice,
-    maxPriorityFeePerGas: 1n,
+    maxPriorityFeePerGas: 2n,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
