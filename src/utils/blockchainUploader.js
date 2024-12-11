@@ -109,16 +109,16 @@ async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, vi
       switch (gasProfile) {
         case 'fast':
           await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await sleep(2000);
           break;
         case 'onePerMinute':
           await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
-          await new Promise(resolve => setTimeout(resolve, 60000));
+          await sleep(60000);
           break;
         case 'custom':
           while (gasPrice > parseGwei(`${customMaxGas}`)) {
             console.log(`Current gas price (${formatGwei(gasPrice)} Gwei) is higher than custom max (${customMaxGas} Gwei). Waiting 1 minute before checking again.`);
-            await new Promise(resolve => setTimeout(resolve, 60000));
+            await sleep(60000);
             gasPrice = await calculateFee();
           }
           await uploadChunk(videoId, chunk, adjustedGasLimit, gasPrice, i, videoChunks.length, videoMetadata.filename);
