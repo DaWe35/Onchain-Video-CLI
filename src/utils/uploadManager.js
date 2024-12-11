@@ -62,14 +62,21 @@ async function confirmResumeUpload(existingUpload) {
   }
 }
 
-async function updateProgress(lastUploadedChunk, totalChunks, filename, videoId) {
-  const progressData = {
-    lastUploadedChunk,
+async function updateProgress(currentChunk, totalChunks, filename, videoId) {
+  const progress = {
+    currentChunk,
     totalChunks,
     filename,
-    videoId
-  };
-  await fs.writeFile(PROGRESS_FILE, JSON.stringify(progressData, null, 2));
+    videoId: videoId ? videoId.toString() : null
+  }
+
+  try {
+    await fs.writeFile(PROGRESS_FILE, JSON.stringify(progress, null, 2))
+    console.log(`Progress updated: ${currentChunk + 1}/${totalChunks} chunks`)
+  } catch (error) {
+    console.error('Error updating progress:', error)
+    throw error
+  }
 }
 
 async function cleanupTempFiles() {

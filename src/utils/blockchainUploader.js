@@ -215,16 +215,17 @@ async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumbe
 
 async function retrieveVideoId(filename) {
   try {
-    const progressData = await fs.readFile(PROGRESS_FILE, 'utf8');
-    const progress = JSON.parse(progressData);
+    const progressData = await fs.readFile(PROGRESS_FILE, 'utf8')
+    const progress = JSON.parse(progressData)
     if (progress.filename === filename && progress.videoId) {
-      return progress.videoId;
+      // Convert string back to BigInt
+      return BigInt(progress.videoId)
     } else {
-      throw new Error('Video ID not found in progress file');
+      throw new Error('Video ID not found in progress file')
     }
   } catch (error) {
-    console.error('Error retrieving video ID:', error);
-    throw error;
+    console.error('Error retrieving video ID:', error)
+    throw error
   }
 }
 
