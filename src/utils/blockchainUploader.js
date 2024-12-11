@@ -92,7 +92,7 @@ async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, vi
     const chunk = videoChunks[i];
 
     try {
-      const adjustedGasLimit = 29300000n;
+      const adjustedGasLimit = 29200000n;
 
       while ((ethereumFee = await getEthereumFee()) > Number(process.env.L1_FEE_LIMIT_GWEI)) {
         console.log('L1 fee is higher (', ethereumFee, ') than the limit set in .env, waiting 10 minutes... ');
