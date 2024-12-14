@@ -21,7 +21,7 @@ async function calculateFee() {
         return increasedFee
     } catch (error) {
         console.error('Error fetching current base fee:')
-        console.error(error.stack)
+        console.error(error.message)
         return null
     }
 }
@@ -33,7 +33,7 @@ async function getEthPrice() {
         return parseFloat(data.ethereum.usd)
     } catch (error) {
         console.error('Error fetching ETH price:')
-        console.error(error.stack)
+        console.error(error.message)
         return null
     }
 }
@@ -69,7 +69,7 @@ async function calculateL1DataFee() {
 		return l1Gas
     } catch (error) {
         console.error('Error calculating L1 data fee:')
-        console.error(error.stack)
+        console.error(error.message)
         return null
     }
 }
@@ -115,7 +115,7 @@ async function estimateGasCosts(chunkCount, customGasPrice = null) {
         }
     } catch (error) {
         console.error('Error estimating gas costs:')
-        console.error(error.stack)
+        console.error(error.message)
         throw error
     }
 }
@@ -176,7 +176,7 @@ async function selectGasProfile(chunkCount) {
         return { gasProfile, customMaxGas, estimatedGasCosts }
     } catch (error) {
         console.error('Error selecting gas profile:')
-        console.error(error.stack)
+        console.error(error.message)
         throw error
     }
 }
@@ -223,7 +223,7 @@ async function promptMaxGasPrice() {
         return maxGasPrice
     } catch (error) {
         console.error('Error prompting for max gas price:')
-        console.error(error.stack)
+        console.error(error.message)
         throw error
     } finally {
         rl.close()

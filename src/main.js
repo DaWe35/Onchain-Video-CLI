@@ -67,7 +67,7 @@ async function main() {
     }
   } catch (error) {
     console.error('An error occurred:');
-    console.error(error.stack);
+    console.error(error.message);
   }
 }
 
