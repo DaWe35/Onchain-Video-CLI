@@ -66,8 +66,13 @@ async function main() {
       console.log('Upload cancelled.');
     }
   } catch (error) {
-    console.error('An error occurred:');
+    console.error('An error occurred in main():');
     console.error(error.message);
+    // log error to file
+    const errorLogFile = path.join(__dirname, 'error.log');
+    const errorLog = fs.createWriteStream(errorLogFile, { flags: 'a' });
+    errorLog.write(`${new Date().toISOString()} - ${error}\n`);
+    errorLog.end();
   }
 }
 
