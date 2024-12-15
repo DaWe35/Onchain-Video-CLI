@@ -1,34 +1,40 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { createPublicClient, createWalletClient, http, formatGwei, parseGwei } = require('viem');
-const { blast } = require('viem/chains');
+const { blast, blastSepolia } = require('viem/chains');
 const { privateKeyToAccount } = require('viem/accounts');
 const { getPrivateKey } = require('./../utils/keyManager');
 const { calculateFee } = require('./gasEstimator');
 const { PROGRESS_FILE, updateProgress } = require('./uploadManager');
 const { getBlobFee, getEthereumFee } = require('./blobFee');
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const { logError } = require('./errorLogger');
 
 // Initialize Viem clients
+const isMainnet = process.env.NETWORK === 'mainnet';
+const contractAddress = isMainnet ? '0x1F00F51E00F10c019617fB4A50d4E893aaf8C98c' : '0xe9b1324F531A4603eb5D1a739E4Ee25a5C824890';
+
 let publicClient;
 let walletClient;
-if (process.env.NETWORK === 'mainnet') {
-  publicClient = createPublicClient({
-    chain: blast,
-    transport: http('https://rpc.blast.io')
-  });
-} else {
-  publicClient = createPublicClient({
-    chain: blast,
-    transport: http('https://sepolia.blast.io')
-  });
-}
-
-const abiPath = path.join(__dirname, '..', '..', 'src', 'abi.json');
 let contractABI;
 
-// Modified ABI loading function
-async function loadABI() {
+// Initialize function to be called before using the clients
+async function initializeClients() {
+  publicClient = createPublicClient({
+    chain: isMainnet ? blast : blastSepolia,
+    transport: http(isMainnet ? 'https://rpc.blast.io' : 'https://sepolia.blast.io')
+  });
+
+  const privateKey = await getPrivateKey();
+  const account = privateKeyToAccount(privateKey);
+  walletClient = createWalletClient({
+    account,
+    chain: isMainnet ? blast : blastSepolia,
+    transport: http(isMainnet ? 'https://rpc.blast.io' : 'https://sepolia.blast.io')
+  });
+
+  // Load ABI
+  const abiPath = path.join(__dirname, '..', 'abi.json');
   try {
     const abiData = await fs.readFile(abiPath, 'utf8');
     contractABI = JSON.parse(abiData);
@@ -36,13 +42,6 @@ async function loadABI() {
     console.error('Error loading ABI:', error);
     throw error;
   }
-}
-
-let contractAddress;
-if (process.env.NETWORK === 'mainnet') {
-  contractAddress = '0x1F00F51E00F10c019617fB4A50d4E893aaf8C98c';
-} else {
-  contractAddress = '0xe9b1324F531A4603eb5D1a739E4Ee25a5C824890';
 }
 
 // When preparing data for the contract, ensure it's properly hex encoded:
@@ -63,15 +62,7 @@ const prepareChunkForUpload = (chunk) => {
 }
 
 async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, videoMetadata, startFromChunk) {
-  await loadABI();
-
-  const privateKey = await getPrivateKey();
-  const account = privateKeyToAccount(privateKey);
-  walletClient = createWalletClient({
-    account,
-    chain: blast,
-    transport: http(process.env.NETWORK === 'mainnet' ? 'https://rpc.blast.io' : 'https://sepolia.blast.io')
-  });
+  await initializeClients();
 
   let videoId;
 
@@ -93,15 +84,13 @@ async function uploadVideoToBlockchain(videoChunks, gasProfile, customMaxGas, vi
 
     try {
       const adjustedGasLimit = 29200000n;
-
-      while ((ethereumFee = await getEthereumFee()) > Number(process.env.L1_FEE_LIMIT_GWEI)) {
-        console.log('L1 fee is higher (', ethereumFee, ') than the limit set in .env, waiting 10 minutes... ');
+      let ethFee = await getEthereumFee()
+      let blobFee = await getBlobFee()
+      while (ethFee > Number(process.env.L1_FEE_LIMIT_GWEI) || blobFee > Number(process.env.L1_BLOBL_FEE_LIMIT_GWEI)) {
+        console.log(`Waiting 10 minutes. L1 fee is ${ethFee} Gwei (max ${process.env.L1_FEE_LIMIT_GWEI} Gwei). Blob fee is ${blobFee} Gwei (max ${process.env.L1_BLOBL_FEE_LIMIT_GWEI} Gwei).`);
         await sleep(600000);
-      }
-
-      while ((blobFee = await getBlobFee()) > Number(process.env.L1_BLOBL_FEE_LIMIT_GWEI)) {
-        console.log('Blob gas price is higher (', blobFee, ') than the limit set in .env, waiting 10 minutes... ');
-        await sleep(600000);
+        ethFee = await getEthereumFee()
+        blobFee = await getBlobFee()
       }
 
       let gasPrice = await calculateFee();
@@ -191,8 +180,9 @@ async function createOnchainVideo(videoMetadata, gasProfile, customMaxGas) {
       throw new Error('VideoCreated event not found in transaction receipt');
     }
   } catch (error) {
-    console.error('Error creating video on blockchain:', error);
-    throw error;
+    console.error('Error creating video on blockchain:', error.message)
+    await logError(error)
+    throw error // Re-throw the original error after logging
   }
 }
 
@@ -204,7 +194,7 @@ async function uploadChunk(videoId, chunk, gasLimit, gasPrice, currentChunkNumbe
     functionName: 'uploadChunk',
     args: [hexData, videoId],
     gas: gasLimit,
-    maxFeePerGas: gasPrice,
+    maxFeePerGas: gasPrice + 1210000n,
     maxPriorityFeePerGas: 1210000n, // 1210000n for aggressive
   });
 

@@ -5,6 +5,7 @@ const { selectGasProfile, confirmUpload } = require('./utils/gasEstimator');
 const { uploadVideoToBlockchain } = require('./utils/blockchainUploader');
 const { TEMP_DIR, checkExistingUpload, confirmResumeUpload, cleanupTempFiles } = require('./utils/uploadManager');
 const path = require('path');
+const { logError } = require('./utils/errorLogger')
 
 async function main() {
   try {
@@ -66,13 +67,9 @@ async function main() {
       console.log('Upload cancelled.');
     }
   } catch (error) {
-    console.error('An error occurred in main():');
-    console.error(error.message);
-    // log error to file
-    const errorLogFile = path.join(__dirname, 'error.log');
-    const errorLog = fs.createWriteStream(errorLogFile, { flags: 'a' });
-    errorLog.write(`${new Date().toISOString()} - ${error}\n`);
-    errorLog.end();
+    console.error('An error occurred in main():')
+    console.error(error.message)
+    await logError(error)
   }
 }
 

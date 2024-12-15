@@ -13,7 +13,8 @@ async function getBlobFee() {
       params: []
     })
     
-    const blobGasPriceGwei = formatGwei(blobGasPriceWei)
+    const blobGasPriceWeiBigInt = BigInt(blobGasPriceWei)
+    const blobGasPriceGwei = formatGwei(blobGasPriceWeiBigInt)
     return blobGasPriceGwei
   } catch (error) {
     console.error('Failed to fetch blob gas price:', error)
